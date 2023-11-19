@@ -20,6 +20,27 @@ def procrustes_align(pc_x, pc_y):
     # 4. estimate translation
     # R and t should now contain the rotation (shape 3x3) and translation (shape 3,)
     # TODO: Your implementation ends here ###############
+    
+    X = np.transpose(pc_x)
+    Y = np.transpose(pc_y)
+
+    X_mean = np.mean(X, axis=1).reshape(3,1)
+    Y_mean = np.mean(Y, axis=1).reshape(3,1)
+    
+    X = X - X_mean
+    Y = Y - Y_mean
+
+    X_Y_t = np.matmul(X, Y.transpose())
+    U, S, V_t = np.linalg.svd(X_Y_t)
+
+    epsilon = 1e-8
+    if np.abs(np.linalg.det(U) * np.linalg.det(V_t.transpose()) - 1) <= epsilon:
+        S = np.eye(3)
+    else:
+        S = np.diagflat([1,1,-1])
+
+    R = np.matmul(np.matmul(U, S), V_t).transpose()
+    t = (Y_mean - np.matmul(R, X_mean)).reshape(3)
 
     t_broadcast = np.broadcast_to(t[:, np.newaxis], (3, pc_x.shape[0]))
     print('Procrustes Aligment Loss: ', np.abs((np.matmul(R, pc_x.T) + t_broadcast) - pc_y.T).mean())

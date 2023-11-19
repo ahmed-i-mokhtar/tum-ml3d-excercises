@@ -150,7 +150,16 @@ def compute_cube_index(cube: np.array, isolevel=0.) -> int:
 
     # ###############
     # TODO: Implement
-    raise NotImplementedError
+    index = cube.copy()
+    index[cube < isolevel] = 1
+    index[cube >= isolevel] = 0
+
+    n_corners = len(cube)
+    bits = list(range(0,n_corners,1))
+    bits = np.array([2**b for b in bits])
+
+    cube_index = (index * bits).sum()
+    return int(cube_index)
     # ###############
 
 
@@ -166,7 +175,77 @@ def marching_cubes(sdf: np.array) -> tuple:
 
     # ###############
     # TODO: Implement
-    raise NotImplementedError
+    global_vertices = []
+    global_triangles = []
+
+    resolution = sdf.shape[0]
+    step = 1.0 / (resolution - 1)
+    
+
+    coord = np.arange(-0.5, 0.5+step, step)
+
+    def corner_points(edge_idx):
+        edge_map = {
+            0 : [np.array([1,0,0]), np.array([1,0,1])],
+            1 : [np.array([1,0,1]), np.array([1,1,1])],
+            2 : [np.array([1,1,1]), np.array([1,1,0])],
+            3 : [np.array([1,1,0]), np.array([1,0,0])],
+            4 : [np.array([0,0,0]), np.array([0,0,1])],
+            5 : [np.array([0,0,1]), np.array([0,1,1])],
+            6 : [np.array([0,1,1]), np.array([0,1,0])],
+            7 : [np.array([0,1,0]), np.array([0,0,0])],
+            8 : [np.array([1,0,0]), np.array([0,0,0])],
+            9 : [np.array([1,0,1]), np.array([0,0,1])],
+            10: [np.array([1,1,1]), np.array([0,1,1])],
+            11: [np.array([1,1,0]), np.array([0,1,0])]
+        }
+        return edge_map[edge_idx]
+
+    new_idx = 0
+    for i in range(resolution-1):
+        for j in range(resolution-1):
+            for k in range(resolution-1):
+                cube = sdf[i:i+2, j:j+2, k:k+2]
+
+                order_idx = [4,5,7,6,0,1,3,2]
+                index = compute_cube_index(cube.flatten()[order_idx])
+
+                vertices = triangle_table[index]
+                vertices = [v for v in vertices if v != -1]
+                             
+                triangle = []
+
+                local_vertices = {}
+
+                for v in vertices:
+                    p_1_idx, p_2_idx = corner_points(v)
+
+                    sdf_1 = sdf[i + p_1_idx[0], j + p_1_idx[1], k + p_1_idx[2]]
+                    sdf_2 = sdf[i + p_2_idx[0], j + p_2_idx[1], k + p_2_idx[2]]
+
+                    # Get the corner point coordinates
+                    p_1 = np.array([coord[p_1_idx[0]+i], coord[p_1_idx[1]+j], coord[p_1_idx[2]+k]])
+                    p_2 = np.array([coord[p_2_idx[0]+i], coord[p_2_idx[1]+j], coord[p_2_idx[2]+k]])
+
+                    v_loc = vertex_interpolation(p_1, p_2, sdf_1, sdf_2)
+
+                    if v not in local_vertices.keys():
+                        local_vertices[v] = (new_idx, v_loc)
+                        triangle.append(new_idx)
+                        new_idx += 1
+                    else:
+                        triangle.append(local_vertices[v][0])
+
+                    if len(triangle) == 3:
+                        global_triangles.append(triangle)
+                        triangle = []
+
+                global_vertices += [l[1] for l in local_vertices.values()]
+
+    global_triangles = np.array(global_triangles)
+    global_vertices = np.array([global_vertices])
+
+    return global_vertices, global_triangles
     # ###############
 
 
