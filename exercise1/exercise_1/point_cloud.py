@@ -48,3 +48,14 @@ def sample_point_cloud(vertices, faces, n_points):
     # ###############
     # TODO: Implement
     # ###############
+    # compute triangle areas
+    # compute probabilities for each triangle
+    # sample triangles according to their probability
+    # sample points on each sampled triangle
+    # return sampled points
+    triangle_areas = compute_all_triangle_areas(vertices[faces[:,0]], vertices[faces[:,1]], vertices[faces[:,2]])
+    triangle_probabilities = triangle_areas / np.sum(triangle_areas)
+    triangle_indices = np.random.choice(faces.shape[0], n_points, p=triangle_probabilities)
+    sampled_points = sample_all_triangles(vertices[faces[triangle_indices,0]], vertices[faces[triangle_indices,1]], vertices[faces[triangle_indices,2]])
+    return sampled_points
+    
