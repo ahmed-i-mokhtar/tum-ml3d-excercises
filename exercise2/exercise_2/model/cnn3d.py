@@ -15,7 +15,14 @@ class MLPConv(nn.Module):
         super().__init__()
         # TODO: Define MLPConv model as nn.Sequential as described in the paper (Conv3d, ReLU, Conv3D, ReLU, Conv3D, ReLU)
         # The first conv has kernel_size and stride provided as the parameters, rest of the convs have 1x1x1 filters, with default stride
-        self.model = None
+        self.model = nn.Sequential(
+          nn.Conv3d(in_channels, out_channels, kernel_size, stride),
+          nn.ReLU(),
+          nn.Conv3d(out_channels ,out_channels , 1, 1),
+          nn.ReLU(),
+          nn.Conv3d(out_channels, out_channels, 1, 1),
+          nn.ReLU()
+        )
 
     def forward(self, x):
         """
@@ -37,7 +44,11 @@ class ThreeDeeCNN(nn.Module):
         super().__init__()
 
         # TODO: Define backbone as sequence of 3 MLPConvs as per the paper
-        self.backbone = None
+        self.backbone = nn.Sequential(
+            MLPConv(1, 48, 6, 2),
+            MLPConv(48, 160, 5, 2),
+            MLPConv(160, 512, 3, 2)
+            )
 
         self.feature_cube_side = 2  # side of resulting volume after last MLPConv layer
 
@@ -46,10 +57,19 @@ class ThreeDeeCNN(nn.Module):
         for i in range(8):
             self.partial_predictors.append(
                 # TODO: partial predictor linear layers as per the paper
+                nn.Linear(512, n_classes)
             )
 
         # TODO: add predictor for full 2x2x2 feature volume
-        self.full_predictor = None
+        self.full_predictor = nn.Sequential(
+            nn.Linear(4096, 2048),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(2048, 2048),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(2048, n_classes)
+            )
 
     def forward(self, x):
         """
@@ -59,7 +79,7 @@ class ThreeDeeCNN(nn.Module):
         batch_size = x.shape[0]
 
         # TODO: Get backbone features
-        backbone_features = None
+        backbone_features = self.backbone(x)
 
         predictions_partial = []
         # get prediction for each of the partial objects
@@ -69,11 +89,11 @@ class ThreeDeeCNN(nn.Module):
                     partial_predictor = self.partial_predictors[d * self.feature_cube_side ** 2 + h * self.feature_cube_side + w]
 
                     # TODO: get prediction for object for backbone feature at d, h, w
-                    partial_object_prediction = None
+                    partial_object_prediction = partial_predictor(backbone_features[:,:,d,h,w])
 
                     predictions_partial.append(partial_object_prediction)
 
         # TODO: Get prediction for whole object
-        full_prediction = None
+        full_prediction = self.full_predictor(backbone_features.reshape(batch_size, 4096))
 
         return torch.stack([full_prediction] + predictions_partial, dim=1)

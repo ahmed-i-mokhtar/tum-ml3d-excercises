@@ -41,7 +41,7 @@ class ShapeNetVox(torch.utils.data.Dataset):
         # Hint: since shape names are in the format "<shape_class>/<shape_identifier>", the first part gives the class
         item_class = item.split('/')[0]
         # read voxels from binvox format on disk as 3d numpy arrays
-        voxels = self.get_shape_voxels(item)
+        voxels = ShapeNetVox.get_shape_voxels(item)
         return {
             "name": item,
             "voxel": voxels[np.newaxis, :, :, :],  # we add an extra dimension as the channel axis, since pytorch 3d tensors are Batch x Channel x Depth x Height x Width
@@ -93,7 +93,7 @@ class ShapeNetPoints(torch.utils.data.Dataset):
         item = self.items[index]
         # Hint: Since shape names are in the format "<shape_class>/<shape_identifier>", the first part gives the class
         item_class = item.split('/')[0]
-        points = np.array(self.get_point_cloud(item), dtype=np.float32)
+        points = np.array(ShapeNetPoints.get_point_cloud(item), dtype=np.float32)
 
         return {
             "name": item,  # The item ID
