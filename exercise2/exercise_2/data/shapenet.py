@@ -82,7 +82,7 @@ class ShapeNetPoints(torch.utils.data.Dataset):
     class_name_mapping = json.loads(Path("exercise_2/data/shape_info.json").read_text())  # mapping for ShapeNet ids -> names
     classes = sorted(class_name_mapping.keys())
 
-    def __init__(self):
+    def __init__(self, split):
         # TODO Read sample IDs from the correct split file and store in self.items
         super().__init__()
         assert split in ['train', 'val', 'overfit']

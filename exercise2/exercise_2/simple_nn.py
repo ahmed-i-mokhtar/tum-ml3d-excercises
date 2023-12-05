@@ -156,7 +156,7 @@ def main(config):
     )
 
     # TODO Instantiate model and move to device
-    model = SimpleModel()
+    model = SimpleModel().to(device)
 
     # Create folder for saving checkpoints
     Path(f'exercise_2/runs/{config["experiment_name"]}').mkdir(exist_ok=True, parents=True)
